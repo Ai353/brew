@@ -168,6 +168,10 @@ case "$@" in
     echo "${HOMEBREW_CACHE}"
     exit 0
     ;;
+  --taps)
+    source "${HOMEBREW_LIBRARY}/Homebrew/cmd/--taps.sh"
+    homebrew---taps "$@" && exit 0
+    ;;
   # falls back to cmd/--prefix.rb and cmd/--cellar.rb on a non-zero return
   --prefix* | --cellar*)
     source "${HOMEBREW_LIBRARY}/Homebrew/formula_path.sh"
@@ -634,6 +638,8 @@ then
     if [[ "${HOMEBREW_MACOS_VERSION_NUMERIC}" -lt "100700" ]]
     then
       printf "         For 10.4 - 10.6 support see: https://github.com/mistydemeo/tigerbrew\\n" >&2
+    else
+      printf "         For 10.5 - %s support see: https://www.macports.org\\n" "${HOMEBREW_MACOS_VERSION}" >&2
     fi
     printf "\\n" >&2
   fi

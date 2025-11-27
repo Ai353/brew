@@ -1215,6 +1215,8 @@ Outputs nothing and returns a failing status code if \fIformula\fP is not instal
 Display where Homebrew\[u2019]s Git repository is located\.
 .P
 If \fIuser\fP\fB/\fP\fIrepo\fP are provided, display where tap \fIuser\fP\fB/\fP\fIrepo\fP\[u2019]s directory is located\.
+.SS "\fB\-\-taps\fP"
+Display the path to Homebrew’s Taps directory\.
 .SS "\fB\-\-version\fP, \fB\-v\fP"
 Print the version numbers of Homebrew, Homebrew/homebrew\-core and Homebrew/homebrew\-cask (if tapped) to standard output\.
 .SH "DEVELOPER COMMANDS"
@@ -1517,7 +1519,7 @@ Treat all named arguments as formulae\.
 .TP
 \fB\-\-cask\fP
 Treat all named arguments as casks\.
-.SS "\fBcontributions\fP \fR[\fB\-\-user=\fP] \fR[\fB\-\-repositories=\fP] \fR[\fB\-\-from=\fP] \fR[\fB\-\-to=\fP] \fR[\fB\-\-csv\fP]"
+.SS "\fBcontributions\fP \fR[\fB\-\-user=\fP] \fR[\fB\-\-repositories=\fP] \fR[\fB\-\-quarter=\fP] \fR[\fB\-\-from=\fP] \fR[\fB\-\-to=\fP] \fR[\fB\-\-csv\fP]"
 Summarise contributions to Homebrew repositories\.
 .TP
 \fB\-\-user\fP
@@ -1531,6 +1533,9 @@ Specify the organisation to populate sources repositories from\. Omitting this f
 .TP
 \fB\-\-team\fP
 Specify the team to populate users from\. The first part of the team name will be used as the organisation\.
+.TP
+\fB\-\-quarter\fP
+Quarter to search (1\-4)\. Omitting this flag searches the past year\. If \fB\-\-from\fP or \fB\-\-to\fP are set, they take precedence\.
 .TP
 \fB\-\-from\fP
 Date (ISO 8601 format) to start searching contributions\. Omitting this flag searches the past year\.
@@ -1753,8 +1758,11 @@ Show several examples\.
 .TP
 \fB\-\-pry\fP
 Use Pry instead of IRB\. Enabled by default if \fB$HOMEBREW_PRY\fP is set\.
-.SS "\fBlgtm\fP"
+.SS "\fBlgtm\fP \fR[\fB\-\-online\fP]"
 Run \fBbrew typecheck\fP, \fBbrew style \-\-changed\fP and \fBbrew tests \-\-changed\fP in one go\.
+.TP
+\fB\-\-online\fP
+Run additional, slower checks that require a network connection\.
 .SS "\fBlinkage\fP \fR[\fIoptions\fP] \fR[\fIinstalled_formula\fP \.\.\.]"
 Check the library links from the given \fIformula\fP kegs\. If no \fIformula\fP are provided, check all kegs\. Raises an error if run on uninstalled formulae\.
 .TP
@@ -2133,7 +2141,7 @@ Don\[u2019]t audit the stable version\.
 Don\[u2019]t audit the revision\.
 .TP
 \fB\-\-only\-cleanup\-before\fP
-Only run the pre\-cleanup step\. Needs \fB\-\-cleanup\fP\&\.
+Only run the pre\-cleanup step\. Needs \fB\-\-cleanup\fP, except in GitHub Actions\.
 .TP
 \fB\-\-only\-setup\fP
 Only run the local system setup check step\.
@@ -2157,7 +2165,7 @@ Only run the formulae dependents steps\.
 Only run the bottles fetch steps\. This optional post\-upload test checks that all the bottles were uploaded correctly\. It is not run unless requested and only needs to be run on a single machine\. The bottle commit to be tested must be on the tested branch\.
 .TP
 \fB\-\-only\-cleanup\-after\fP
-Only run the post\-cleanup step\. Needs \fB\-\-cleanup\fP\&\.
+Only run the post\-cleanup step\. Needs \fB\-\-cleanup\fP, except in GitHub Actions\.
 .TP
 \fB\-\-testing\-formulae\fP
 Use these testing formulae rather than running the formulae detection steps\.
@@ -2197,11 +2205,20 @@ Exit early on the first failing test\.
 \fB\-\-no\-parallel\fP
 Run tests serially\.
 .TP
+\fB\-\-stackprof\fP
+Use \fBstackprof\fP to profile tests\.
+.TP
+\fB\-\-vernier\fP
+Use \fBvernier\fP to profile tests\.
+.TP
+\fB\-\-ruby\-prof\fP
+Use \fBruby\-prof\fP to profile tests\.
+.TP
 \fB\-\-only\fP
 Run only \fB<test_script>_spec\.rb\fP\&\. Appending \fB:<line_number>\fP will start at a specific line\.
 .TP
 \fB\-\-profile\fP
-Run the test suite serially to find the \fIn\fP slowest tests\.
+Output the \fIn\fP slowest tests\. When run without \fB\-\-no\-parallel\fP this will output the slowest tests for each parallel test process\.
 .TP
 \fB\-\-seed\fP
 Randomise tests with the specified \fIvalue\fP instead of a random seed\.

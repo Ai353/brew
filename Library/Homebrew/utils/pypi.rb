@@ -3,6 +3,7 @@
 
 require "utils/inreplace"
 require "utils/output"
+require "utils/ast"
 
 # Helper functions for updating PyPI resources.
 module PyPI
@@ -237,17 +238,13 @@ module PyPI
                                     exclude_packages: nil, dependencies: nil, install_dependencies: false,
                                     print_only: false, silent: false, verbose: false,
                                     ignore_errors: false, ignore_non_pypi_packages: false)
-    list_entry = formula.pypi_packages_info
-    if list_entry.defined_pypi_mapping? && package_name.blank? && extra_packages.blank? && exclude_packages.blank?
+    if [package_name, extra_packages, exclude_packages, dependencies].all?(&:blank?)
+      list_entry = formula.pypi_packages_info
 
-      if list_entry.needs_manual_update? && !print_only
-        odie "The resources for \"#{formula.name}\" need special attention. Please update them manually."
-      else
-        package_name = list_entry.package_name
-        extra_packages = list_entry.extra_packages
-        exclude_packages = list_entry.exclude_packages
-        dependencies = list_entry.dependencies
-      end
+      package_name = list_entry.package_name
+      extra_packages = list_entry.extra_packages
+      exclude_packages = list_entry.exclude_packages
+      dependencies = list_entry.dependencies
     end
 
     missing_dependencies = Array(dependencies).reject do |dependency|
@@ -334,6 +331,10 @@ module PyPI
       end
     end
 
+    existing_resources_by_name = formula.resources.to_h { |resource| [resource.name, resource] }
+    formula_contents = formula.path.read
+    existing_resource_blocks = resource_blocks_from_formula(formula_contents)
+
     require "formula"
     Formula[python_name].ensure_installed!
 
@@ -385,6 +386,16 @@ module PyPI
       end
 
       if package_error.blank?
+        if (existing_resource = existing_resources_by_name[T.must(name)]) &&
+           existing_resource.url == url &&
+           existing_resource.checksum&.hexdigest == checksum &&
+           (existing_block = existing_resource_blocks[T.must(name)])
+          new_resource_blocks += <<-EOS
+  #{existing_block.dup}
+
+          EOS
+          next
+        end
         # Append indented resource block
         new_resource_blocks += <<-EOS
   resource "#{name}" do
@@ -445,6 +456,26 @@ module PyPI
     end
 
     true
+  end
+
+  sig { params(contents: String).returns(T::Hash[String, String]) }
+  def self.resource_blocks_from_formula(contents)
+    blocks = {}
+    _processed_source, root_node = Utils::AST.process_source(contents)
+    return blocks if root_node.nil?
+
+    root_node.each_node(:block) do |node|
+      next unless Utils::AST.call_node_match?(node, name: :resource, type: :block_call)
+
+      send_node = node.send_node
+      name_node = send_node.arguments.first
+      next if name_node.blank? || !name_node.str_type?
+
+      resource_name = name_node.str_content
+      blocks[resource_name] = node.location.expression.source
+    end
+
+    blocks
   end
 
   sig { params(name: String).returns(String) }
