@@ -60,10 +60,17 @@ module Cask
             MacOSRequirement.new([args], comparator: "==")
           elsif first_arg.is_a?(Symbol) && MacOSVersion::SYMBOLS.key?(first_arg)
             MacOSRequirement.new([args.first], comparator: "==")
+<<<<<<< HEAD
           elsif (md = /^\s*(?<comparator><|>|[=<>]=)\s*:(?<version>\S+)\s*$/.match(first_arg_s))
             MacOSRequirement.new([T.must(md[:version]).to_sym], comparator: md[:comparator])
           elsif (md = /^\s*(?<comparator><|>|[=<>]=)\s*(?<version>\S+)\s*$/.match(first_arg_s))
             MacOSRequirement.new([md[:version]], comparator: md[:comparator])
+=======
+          elsif (md = /^\s*(?<comparator><|>|[=<>]=)\s*:(?<version>\S+)\s*$/.match(first_arg))
+            MacOSRequirement.new([T.must(md[:version]).to_sym], comparator: T.must(md[:comparator]))
+          elsif (md = /^\s*(?<comparator><|>|[=<>]=)\s*(?<version>\S+)\s*$/.match(first_arg))
+            MacOSRequirement.new([md[:version]], comparator: T.must(md[:comparator]))
+>>>>>>> upstream/on_system-add-uses_on_system-class
           # This is not duplicate of the first case: see `args.first` and a different comparator.
           else # rubocop:disable Lint/DuplicateBranch
             MacOSRequirement.new([args.first], comparator: "==")
