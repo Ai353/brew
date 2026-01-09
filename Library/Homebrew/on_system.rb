@@ -1,9 +1,11 @@
 # typed: strict
 # frozen_string_literal: true
 
+require "requirements/macos_requirement"
 require "simulate_system"
 
 module OnSystem
+<<<<<<< HEAD:Library/Homebrew/on_system.rb
   ARCH_OPTIONS = [:intel, :arm].freeze
   BASE_OS_OPTIONS = [:macos, :linux].freeze
   ALL_OS_OPTIONS = T.let([*MacOSVersion::SYMBOLS.keys, :linux].freeze, T::Array[Symbol])
@@ -15,6 +17,62 @@ module OnSystem
 
     tag
   end.freeze, T::Array[Utils::Bottles::Tag])
+=======
+  ARCH_OPTIONS = T.let([:intel, :arm].freeze, T::Array[Symbol])
+  BASE_OS_OPTIONS = T.let([:macos, :linux].freeze, T::Array[Symbol])
+  ALL_OS_OPTIONS = T.let([*MacOSVersion::SYMBOLS.keys, :linux].freeze, T::Array[Symbol])
+  ALL_OS_ARCH_COMBINATIONS = T.let(
+    ALL_OS_OPTIONS.product(ARCH_OPTIONS).freeze,
+    T::Array[[Symbol, Symbol]],
+  )
+
+  VALID_OS_ARCH_TAGS = T.let(
+    ALL_OS_ARCH_COMBINATIONS.filter_map do |os, arch|
+      tag = Utils::Bottles::Tag.new(system: os, arch:)
+      next unless tag.valid_combination?
+
+      tag
+    end.freeze,
+    T::Array[Utils::Bottles::Tag],
+  )
+
+  class UsesOnSystem < T::Struct
+    prop :arm, T::Boolean, default: false
+    prop :intel, T::Boolean, default: false
+    prop :linux, T::Boolean, default: false
+    prop :macos, T::Boolean, default: false
+    prop :macos_requirements, T::Set[MacOSRequirement], default: Set[]
+
+    alias arm? arm
+    alias intel? intel
+    alias linux? linux
+    alias macos? macos
+
+    # Whether the object has only default values.
+    sig { returns(T::Boolean) }
+    def empty?
+      !@arm && !@intel && !@linux && !@macos && @macos_requirements.empty?
+    end
+
+    # Whether the object has any non-default values.
+    sig { returns(T::Boolean) }
+    def present? = !empty?
+  end
+
+  # Converts an `or_condition` value to a suitable `MacOSRequirements`
+  # `comparator` string, defaulting to `==` if the provided argument is `nil`.
+  sig { params(symbol: T.nilable(Symbol)).returns(String) }
+  def self.comparator_from_or_condition(symbol)
+    case symbol
+    when :or_newer
+      ">="
+    when :or_older
+      "<="
+    else
+      "=="
+    end
+  end
+>>>>>>> upstream/on_system-add-uses_on_system-class:Library/Homebrew/extend/on_system.rb
 
   sig { params(arch: Symbol).returns(T::Boolean) }
   def self.arch_condition_met?(arch)
@@ -33,16 +91,17 @@ module OnSystem
       raise ArgumentError, "Invalid OS `or_*` condition: #{or_condition.inspect}"
     end
 
-    return false if Homebrew::SimulateSystem.simulating_or_running_on_linux?
-
-    base_os = MacOSVersion.from_symbol(os_name)
-    current_os = if Homebrew::SimulateSystem.current_os == :macos
+    current_os_symbol = Homebrew::SimulateSystem.current_os
+    current_os = if current_os_symbol == :macos
       # Assume the oldest macOS version when simulating a generic macOS version
       # Version::NULL is always treated as less than any other version.
       Version::NULL
+    elsif MacOSVersion::SYMBOLS.key?(current_os_symbol)
+      MacOSVersion.from_symbol(current_os_symbol)
     else
-      MacOSVersion.from_symbol(Homebrew::SimulateSystem.current_os)
+      return false
     end
+    base_os = MacOSVersion.from_symbol(os_name)
 
     return current_os >= base_os if or_condition == :or_newer
     return current_os <= base_os if or_condition == :or_older
@@ -59,11 +118,16 @@ module OnSystem
   def self.setup_arch_methods(base)
     ARCH_OPTIONS.each do |arch|
       base.define_method(:"on_#{arch}") do |&block|
+<<<<<<< HEAD:Library/Homebrew/on_system.rb
         @on_system_blocks_exist = T.let(true, T.nilable(TrueClass))
+=======
+        @uses_on_system ||= T.let(OnSystem::UsesOnSystem.new, T.nilable(OnSystem::UsesOnSystem))
+        @uses_on_system.send(:"#{arch}=", true)
+>>>>>>> upstream/on_system-add-uses_on_system-class:Library/Homebrew/extend/on_system.rb
 
         return unless OnSystem.arch_condition_met? OnSystem.condition_from_method_name(T.must(__method__))
 
-        @called_in_on_system_block = true
+        @called_in_on_system_block = T.let(true, T.nilable(T::Boolean))
         result = block.call
         @called_in_on_system_block = false
 
@@ -72,7 +136,13 @@ module OnSystem
     end
 
     base.define_method(:on_arch_conditional) do |arm: nil, intel: nil|
+<<<<<<< HEAD:Library/Homebrew/on_system.rb
       @on_system_blocks_exist = T.let(true, T.nilable(TrueClass))
+=======
+      @uses_on_system ||= T.let(OnSystem::UsesOnSystem.new, T.nilable(OnSystem::UsesOnSystem))
+      @uses_on_system.arm = true if arm
+      @uses_on_system.intel = true if intel
+>>>>>>> upstream/on_system-add-uses_on_system-class:Library/Homebrew/extend/on_system.rb
 
       if OnSystem.arch_condition_met? :arm
         arm
@@ -86,7 +156,12 @@ module OnSystem
   def self.setup_base_os_methods(base)
     BASE_OS_OPTIONS.each do |base_os|
       base.define_method(:"on_#{base_os}") do |&block|
+<<<<<<< HEAD:Library/Homebrew/on_system.rb
         @on_system_blocks_exist = T.let(true, T.nilable(TrueClass))
+=======
+        @uses_on_system ||= T.let(OnSystem::UsesOnSystem.new, T.nilable(OnSystem::UsesOnSystem))
+        @uses_on_system.send(:"#{base_os}=", true)
+>>>>>>> upstream/on_system-add-uses_on_system-class:Library/Homebrew/extend/on_system.rb
 
         return unless OnSystem.os_condition_met? OnSystem.condition_from_method_name(T.must(__method__))
 
@@ -99,7 +174,13 @@ module OnSystem
     end
 
     base.define_method(:on_system) do |linux, macos:, &block|
+<<<<<<< HEAD:Library/Homebrew/on_system.rb
       @on_system_blocks_exist = T.let(true, T.nilable(TrueClass))
+=======
+      @uses_on_system ||= T.let(OnSystem::UsesOnSystem.new, T.nilable(OnSystem::UsesOnSystem))
+      @uses_on_system.linux = true
+      @uses_on_system.macos = true
+>>>>>>> upstream/on_system-add-uses_on_system-class:Library/Homebrew/extend/on_system.rb
 
       raise ArgumentError, "The first argument to `on_system` must be `:linux`" if linux != :linux
 
@@ -108,6 +189,9 @@ module OnSystem
       else
         [macos.to_sym, nil]
       end
+
+      comparator = OnSystem.comparator_from_or_condition(or_condition)
+      @uses_on_system.macos_requirements << MacOSRequirement.new([os_version], comparator:)
       return if !OnSystem.os_condition_met?(os_version, or_condition) && !OnSystem.os_condition_met?(:linux)
 
       @called_in_on_system_block = true
@@ -118,7 +202,13 @@ module OnSystem
     end
 
     base.define_method(:on_system_conditional) do |macos: nil, linux: nil|
+<<<<<<< HEAD:Library/Homebrew/on_system.rb
       @on_system_blocks_exist = T.let(true, T.nilable(TrueClass))
+=======
+      @uses_on_system ||= T.let(OnSystem::UsesOnSystem.new, T.nilable(OnSystem::UsesOnSystem))
+      @uses_on_system.macos = true if macos
+      @uses_on_system.linux = true if linux
+>>>>>>> upstream/on_system-add-uses_on_system-class:Library/Homebrew/extend/on_system.rb
 
       if OnSystem.os_condition_met?(:macos) && macos.present?
         macos
@@ -132,11 +222,22 @@ module OnSystem
   def self.setup_macos_methods(base)
     MacOSVersion::SYMBOLS.each_key do |os_name|
       base.define_method(:"on_#{os_name}") do |or_condition = nil, &block|
+<<<<<<< HEAD:Library/Homebrew/on_system.rb
         @on_system_blocks_exist = T.let(true, T.nilable(TrueClass))
+=======
+        @uses_on_system ||= T.let(OnSystem::UsesOnSystem.new, T.nilable(OnSystem::UsesOnSystem))
+        @uses_on_system.macos = true
+>>>>>>> upstream/on_system-add-uses_on_system-class:Library/Homebrew/extend/on_system.rb
 
         os_condition = OnSystem.condition_from_method_name T.must(__method__)
-        return unless OnSystem.os_condition_met? os_condition, or_condition
+        comparator = OnSystem.comparator_from_or_condition(or_condition)
+        @uses_on_system.macos_requirements << MacOSRequirement.new([os_condition], comparator:)
 
+<<<<<<< HEAD:Library/Homebrew/on_system.rb
+=======
+        return unless OnSystem.os_condition_met?(os_condition, or_condition)
+
+>>>>>>> upstream/on_system-add-uses_on_system-class:Library/Homebrew/extend/on_system.rb
         @on_system_block_min_os = T.let(
           if or_condition == :or_older
             @called_in_on_system_block ? @on_system_block_min_os : MacOSVersion.new(HOMEBREW_MACOS_OLDEST_ALLOWED)
@@ -145,7 +246,11 @@ module OnSystem
           end,
           T.nilable(MacOSVersion),
         )
+<<<<<<< HEAD:Library/Homebrew/on_system.rb
         @called_in_on_system_block = T.let(true, T.nilable(T::Boolean))
+=======
+        @called_in_on_system_block = true
+>>>>>>> upstream/on_system-add-uses_on_system-class:Library/Homebrew/extend/on_system.rb
         result = block.call
         @called_in_on_system_block = false
 

@@ -789,7 +789,17 @@ module Cask
       return if app_min_os.nil? || app_min_os <= HOMEBREW_MACOS_OLDEST_ALLOWED
 
       on_system_block_min_os = cask.on_system_block_min_os
+<<<<<<< HEAD
       depends_on_min_os = cask.depends_on.macos&.minimum_version
+=======
+      cask_min_os = [on_system_block_min_os, cask.depends_on.macos&.minimum_version].compact.max
+      odebug "Declared minimum OS version: #{cask_min_os&.to_sym}"
+      return if cask_min_os&.to_sym == min_os.to_sym
+      return if cask.uses_on_system.present? &&
+                OnSystem.arch_condition_met?(:arm) &&
+                cask_min_os.present? &&
+                cask_min_os < MacOSVersion.new("11")
+>>>>>>> upstream/on_system-add-uses_on_system-class
 
       cask_min_os = [on_system_block_min_os, depends_on_min_os].compact.max
       debug_messages = []
